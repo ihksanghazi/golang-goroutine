@@ -56,3 +56,59 @@ func TestRWMutex(t *testing.T) {
 	fmt.Println("Total Account = ",account.getBalance())
 
 }
+
+type UserBalance struct{
+	sync.Mutex
+	name string
+	balance int
+}
+
+func (user *UserBalance) Lock(){
+	user.Mutex.Lock()
+}
+
+func (user *UserBalance) UnLock(){
+	user.Mutex.Unlock()
+}
+
+func (user *UserBalance) Change(amount int){
+	user.balance = user.balance + amount
+}
+
+func Transfer(user1 *UserBalance, user2 *UserBalance, amount int){
+	user1.Lock()
+	fmt.Println("Lock User 1 ",user1.name)
+	user1.Change(-amount)
+
+	time.Sleep(1*time.Second)
+
+	user2.Lock()
+	fmt.Println("Lock User 2 ",user2.name)
+	user2.Change(amount)
+
+	time.Sleep(1*time.Second)
+
+	user1.UnLock()
+	user2.UnLock()
+}
+
+func TestDeadlock(t *testing.T) {
+	user1 := UserBalance{
+		name: "Sandy",
+		balance: 1000000,
+	}
+
+	user2 := UserBalance{
+		name: "Azhi",
+		balance: 1000000,
+	}
+
+	go Transfer(&user1,&user2,100000)
+	go Transfer(&user2,&user1,200000)
+
+	time.Sleep(10*time.Second)
+
+	fmt.Println("User ",user1.name," Balance ",user1.balance)
+	fmt.Println("User ",user2.name," Balance ",user2.balance)
+
+}
